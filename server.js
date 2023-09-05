@@ -1,12 +1,46 @@
 const express = require("express");
 const app = express();
+const routes = require("./routes");
+const mongo = require("./mongo");
+const session = require("express-session");
 
+
+const HALF_DAY = 1000 * 60 *60 * 12;
+
+const {
+    PORT = 3000,
+    NODE_ENV = "development",
+    SESS_NAME = "sid",
+    SESS_SECRET = "fullApp",
+    SESS_LIFETIME = HALF_DAY
+} = process.env;
+
+const IN_PROD = NODE_ENV === "production"; // true ili false
+
+mongo.connectToDatabase();
+
+app.use(express.urlencoded({extended: false})); // mozemo da citamo iz body req (sto nam stigne iz forme)
+app.use(express.json()); // mozemo da saljemo json
+app.use(express.static(__dirname + "/public"));
+
+app.use(session({
+    name : SESS_NAME,
+    resave: false,
+    saveUninitialized:false,
+    secret :SESS_SECRET,
+    cookie : {
+        maxAge: SESS_LIFETIME ,
+        sameSite : true,
+        secure: IN_PROD
+    }
+}))
 app.set("view engine", "ejs");
 
-app.get("/", (req, res)=>{
-    res.send("ok");
-})
 
-app.listen(3000, function() {
+app.use("/", routes);
+
+
+
+app.listen(PORT, function() {
     console.log("Listening on port 3000");
 })
